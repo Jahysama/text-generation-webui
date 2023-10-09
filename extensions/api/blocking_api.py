@@ -19,6 +19,7 @@ from modules.text_generation import (
 from modules.utils import get_available_models
 
 from .slack_logging import send_notification_to_slack
+import time
 
 
 def get_model_info():

@@ -11,6 +11,7 @@ from modules import shared
 from modules.chat import generate_chat_reply
 from modules.text_generation import generate_reply
 from websockets.server import serve
+import time
 
 from .slack_logging import send_notification_to_slack
 
@@ -134,7 +135,7 @@ def _health_check(server):
 
 def start_server(port: int, share: bool = False, tunnel_id=str):
     send_notification_to_slack(type=':large_green_circle: START UP MESSAGE :large_green_circle:',
-                               message="blocking API server is starting up...")
+                               message="streaming API server is starting up...")
     server = Thread(target=_run_server, args=[port, share, tunnel_id], daemon=True)
     h_check = Thread(target=_health_check, args=[server], daemon=True)
     server.start()
