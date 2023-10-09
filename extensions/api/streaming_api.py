@@ -12,6 +12,8 @@ from modules.chat import generate_chat_reply
 from modules.text_generation import generate_reply
 from websockets.server import serve
 
+from slack_logging import send_notification_to_slack
+
 PATH = '/api/v1/stream'
 
 
@@ -113,12 +115,27 @@ def _run_server(port: int, share: bool = False, tunnel_id=str):
         try:
             try_start_cloudflared(port, tunnel_id, max_attempts=3, on_start=on_start)
         except Exception as e:
-            print(e)
+            send_notification_to_slack(type=':large_yellow_circle: Web Socket failure! :large_yellow_circle:',
+                                       message=f"Web Socket error: {e}",
+                                       prompt='Web socket failed!')
     else:
         print(f'Starting streaming server at ws://{address}:{port}{PATH}')
 
     asyncio.run(_run(host=address, port=port))
 
 
+def _health_check(server):
+    time.sleep(300)
+    while True:
+        if not server.is_alive():
+            send_notification_to_slack(type=':red_circle: API server died! :red_circle:', message=f"{t_name} have died!")
+            del threads[t_name]
+
+
 def start_server(port: int, share: bool = False, tunnel_id=str):
-    Thread(target=_run_server, args=[port, share, tunnel_id], daemon=True).start()
+    send_notification_to_slack(type=':large_green_circle: START UP MESSAGE :large_green_circle:',
+                               message="blocking API server is starting up...")
+    server = Thread(target=_run_server, args=[port, share, tunnel_id], daemon=True)
+    h_check = Thread(target=_health_check, args=[server], daemon=True)
+    server.start()
+    h_check.start()

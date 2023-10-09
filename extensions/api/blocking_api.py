@@ -18,6 +18,8 @@ from modules.text_generation import (
 )
 from modules.utils import get_available_models
 
+from slack_logging import send_notification_to_slack
+
 
 def get_model_info():
     return {
@@ -37,9 +39,11 @@ class Handler(BaseHTTPRequestHandler):
             response = json.dumps({
                 'result': shared.model_name
             })
-
             self.wfile.write(response.encode('utf-8'))
         else:
+            send_notification_to_slack(type=':red_circle: MODEL LOADING ERROR :red_circle:',
+                                       message="Error 404: Failed to find LLM!",
+                                       prompt='Model GET request')
             self.send_error(404)
 
     def do_POST(self):
@@ -186,6 +190,9 @@ class Handler(BaseHTTPRequestHandler):
 
             self.wfile.write(response.encode('utf-8'))
         else:
+            send_notification_to_slack(type=':large_yellow_circle: Failed to send POST request :large_yellow_circle:',
+                                       message="Error 404: Failed to send Post request",
+                                       prompt='Post request failed')
             self.send_error(404)
 
     def do_OPTIONS(self):
@@ -220,5 +227,18 @@ def _run_server(port: int, share: bool = False, tunnel_id=str):
     server.serve_forever()
 
 
+def _health_check(server):
+    time.sleep(300)
+    while True:
+        if not server.is_alive():
+            send_notification_to_slack(type=':red_circle: API server died! :red_circle:', message=f"{t_name} have died!")
+            del threads[t_name]
+
+
 def start_server(port: int, share: bool = False, tunnel_id=str):
-    Thread(target=_run_server, args=[port, share, tunnel_id], daemon=True).start()
+    send_notification_to_slack(type=':large_green_circle: START UP MESSAGE :large_green_circle:',
+                               message="blocking API server is starting up...")
+    server = Thread(target=_run_server, args=[port, share, tunnel_id], daemon=True)
+    h_check = Thread(target=_health_check, args=[server], daemon=True)
+    server.start()
+    h_check.start()
