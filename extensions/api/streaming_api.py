@@ -12,7 +12,7 @@ from modules.chat import generate_chat_reply
 from modules.text_generation import generate_reply
 from websockets.server import serve
 
-from slack_logging import send_notification_to_slack
+from .slack_logging import send_notification_to_slack
 
 PATH = '/api/v1/stream'
 
