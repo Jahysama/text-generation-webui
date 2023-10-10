@@ -42,9 +42,6 @@ class Handler(BaseHTTPRequestHandler):
             })
             self.wfile.write(response.encode('utf-8'))
         else:
-            send_notification_to_slack(type=':red_circle: MODEL LOADING ERROR :red_circle:',
-                                       message="Error 404: Failed to find LLM!",
-                                       prompt='Model GET request')
             self.send_error(404)
 
     def do_POST(self):
@@ -150,6 +147,9 @@ class Handler(BaseHTTPRequestHandler):
                         add_lora_to_model(shared.args.lora)  # list
 
                 except Exception as e:
+                    send_notification_to_slack(type=':red_circle: MODEL LOADING ERROR :red_circle:',
+                                               message=f"Error 404: Failed to find LLM!\n{e}",
+                                               prompt='Model GET request')
                     response = json.dumps({'error': {'message': repr(e)}})
 
                     self.wfile.write(response.encode('utf-8'))
